@@ -1,0 +1,464 @@
+"""VLM backend interfaces (local server, GPT-4) and the universal grounder for video question grounding and QA.
+
+Derived from T* (https://github.com/LongVideoHaystack/TStar), MIT-licensed.
+See THIRD_PARTY_LICENSES at the repository root.
+"""
+import os
+from typing import Optional, List, Tuple
+import re
+import openai
+from PIL import Image
+from .utils import encode_image_to_base64, load_video_frames
+import requests
+import json
+import warnings
+warnings.filterwarnings("ignore")
+
+class LocalVLMInterface:
+    def __init__(self, model_name: str="default", base_url: str="http://localhost:8000/v1"):
+        """
+        deploy VLM locally
+        access via RESTful API        
+        """
+        self.model_name = model_name
+        self.client = openai.Client(api_key="None", base_url=base_url)
+
+    def inference_text_only(
+        self, 
+        query: str, 
+        system_message: str = "You are a helpful assistant.",
+        temperature: float = 0.7,
+        max_tokens: int = 1000
+    ) -> str:
+        """
+        inference only with text input
+        """
+        try:
+            stream_request = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": query,
+                            },
+                        ],
+                    },
+                ],
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True,
+            )
+            stream_response = ""
+
+            for chunk in stream_request:
+                if chunk.choices[0].delta.content is not None:
+                    content = chunk.choices[0].delta.content
+                    stream_response += content
+
+            return stream_response
+
+        except Exception as e:
+            return f"Error: {str(e)}"
+
+    def inference_with_frames_all_in_one(
+        self,
+        query: str,
+        frames: List[Image.Image],
+        system_message: str = "You are a helpful assistant.",
+        temperature: float = 0.2,
+        max_tokens: int = 1000
+    ) -> str:
+        try:
+            # resize frame to (224, 224)
+            inputs = [{"type": "text", "text": query}]
+            for i, frame in enumerate(frames):
+                frame_base64 = encode_image_to_base64(frame)
+                visual_context = {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{frame_base64}",
+                            },
+                        "modalities": "multi-images",
+                    }
+                # Adding visual context (images) to messages if supported by the model
+                inputs.append(visual_context)
+
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": inputs,
+                    },
+                ],
+                temperature=0.2,
+            )
+            return response.choices[0].message.content
+
+        except Exception as e:
+            print(f"Error in inference_with_frames_all_in_one: {str(e)}")
+            return f"Error: {str(e)}"
+
+class GPT4Interface:
+    def __init__(self,model="gpt-4o", api_key=None):
+        """
+        Initialize the GPT-4 API client.
+
+        Reads the OpenAI API key from the environment variable `OPENAI_API_KEY`.
+        """
+        # Defaults to the official OpenAI API; override with OPENAI_BASE_URL to route
+        # through a proxy or a local OpenAI-compatible server.
+        self.url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1/chat/completions")
+        self.api_key = api_key
+        self.model_name = model
+        if api_key==None:
+            self.api_key = os.getenv("OPENAI_API_KEY")
+        if not self.api_key:
+            raise ValueError("Environment variable OPENAI_API_KEY is not set.")
+
+        self.headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"  # Reads key from env var OPENAI_API_KEY
+        }
+
+        openai.api_key = self.api_key
+
+    def inference_text_only(self, query: str, system_message: str = "You are a helpful assistant.", temperature: float = 0.7, max_tokens: int = 1000) -> str:
+        """
+        Perform inference using the GPT-4 API.
+
+        Args:
+            query (str): User's query or input.
+            system_message (str): System message to guide the model's behavior.
+            temperature (float): Sampling temperature for the response.
+            max_tokens (int): Maximum number of tokens for the response.
+
+        Returns:
+            str: The response generated by the GPT-4 model.
+        """
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": query},
+        ]
+        data = { 
+            "model": self.model_name,
+            "messages": messages,
+            "temperature": 0.7 
+        }
+        try:
+            response = requests.post(self.url, headers=self.headers, data=json.dumps(data))
+            response = response.json()
+
+            return response['choices'][0]['message']['content'].strip()
+        
+        except Exception as e:
+            return f"Error: {str(e)}"
+    
+    def inference_with_frames_all_in_one(self, query: str, frames: List[Image.Image], system_message: str = "You are a helpful assistant.", temperature: float = 0.7, max_tokens: int = 1000) -> str:
+        """
+        Perform inference using the GPT-4 API with video frames as context.
+
+        Args:
+            query (str): User's query or input.
+            frames (List[Image.Image]): List of PIL.Image objects to provide visual context.
+            system_message (str): System message to guide the model's behavior.
+            temperature (float): Sampling temperature for the response.
+            max_tokens (int): Maximum number of tokens for the response.
+
+        Returns:
+            str: The response generated by the GPT-4 model.
+        """
+
+        # Messages format
+        inputs = [{"type": "text", "text": query}]
+
+        # Encode frames as Base64 strings
+        for i, frame in enumerate(frames):
+            try:
+                # Convert PIL Image to Base64 string
+                frame_base64 = encode_image_to_base64(frame)
+                visual_context = {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{frame_base64}",
+                            "detail": "low"
+                            }
+                    }
+                # Adding visual context (images) to messages if supported by the model
+                inputs.append(visual_context)
+
+            except Exception as e:
+                return f"Error encoding frame {i}: {str(e)}"
+
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": inputs},
+        ]
+        data = { 
+            "model": self.model_name,
+            "messages": messages,
+            "temperature": 0.1 
+        }
+        try:
+            response = requests.post(self.url, headers=self.headers, data=json.dumps(data))
+            response = response.json()
+            return response['choices'][0]['message']['content'].strip()
+
+        except Exception as e:
+            return f"Error: {str(e)}"
+
+class UniversalGrounder:
+    """
+        A universal interface for different VLM backends to perform video question grounding.
+    """
+    def __init__(
+        self,
+        backend: str = "llava",
+        model_name: Optional[str] = None,
+        base_url: Optional[str] = None,
+        gpt4_model_name: str = "gpt-4o",
+        gpt4_api_key: Optional[str] = None,
+        num_frames: Optional[int] = 8,
+    ):
+        """
+        Args:
+            backend: grounding VLM backend. 'gpt4' (the documented default; see README)
+                or a local 'llava' server. model_name/base_url configure the local server.
+            gpt4_model_name, gpt4_api_key: model name & API key for the 'gpt4' backend.
+        """
+        self.backend = backend.lower()
+        self.num_frames = num_frames
+        if self.backend == "llava" or self.backend == "internvl":
+            if not model_name:
+                raise ValueError("Please provide certain model_name")
+            self.VLM_model_interface = LocalVLMInterface(model_name=model_name, base_url=base_url)
+
+        elif self.backend == "gpt4":
+            self.VLM_model_interface = GPT4Interface(model=gpt4_model_name, api_key=None)
+
+        else:
+            raise ValueError("backend must be either 'llava', 'internvl', or 'gpt4'.")
+
+    def inference_query_grounding(
+        self,
+        video_path: str,
+        question: str,
+        upload_video: bool = True,
+        options: Optional[str] = None,
+        temperature: float = 0.0,
+        max_tokens: int = 512
+    ) -> Tuple[List[str], List[str]]:
+        """
+        identify target_objects and cue_objects that help answer the question.
+        """
+        frames = load_video_frames(video_path=video_path, num_frames=self.num_frames)
+        # Build the prompt
+        if self.backend == "llava" or self.backend == "internvl":
+            system_prompt = (
+            "Analyze the following video frames and question:\n"
+            f"Question: {question}\n"
+            )
+
+        elif self.backend == "gpt4":
+            system_prompt = (
+                "Here is a video:\n"
+                + "\n".join(["<image>"] * len(frames))
+                + "\nHere is a question about the video:\n"
+                f"Question: {question}\n"
+            )
+
+        else:
+            raise ValueError("backend must be one of 'llava', 'internvl', or 'gpt4'.")
+        
+            
+        if options:
+            system_prompt += f"Options: {options}\n"
+            
+        system_prompt += (
+            "\nWhen answering this question about the video:\n"
+            "1. What key objects to locate the answer?\n"
+            "   - List potential key objects (short sentences, separated by commas).\n"
+            "2. What cue objects might be near the key objects and might appear in the scenes?\n"
+            "   - List potential cue objects (short sentences, separated by commas).\n\n"
+            "Please provide your answer in two lines, directly listing the key and cue objects based on the question and options provided, separated by commas.\n"
+            "Your response format should be strictly like this in two lines:\n"
+            "Key Objects:object1,object2,object3\n"
+            "Cue Objects:object1,object2,object3"
+        )
+
+        if upload_video:
+            response = self.VLM_model_interface.inference_with_frames_all_in_one(
+                query=system_prompt,
+                frames=frames,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+        else:
+            response = self.VLM_model_interface.inference_text_only(
+                query=system_prompt,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+
+        # parse response based on expected format
+        lines = response.split("\n")
+        if len(lines) < 2:
+            raise ValueError("Unexpected response format. Could not extract objects.")
+
+        target_objects = self.parse_objects(lines[0])
+        cue_objects = self.parse_objects(lines[1])
+        return target_objects, cue_objects
+        
+    def inference_query_grounding_cot(
+        self,
+        video_path: str,
+        question: str,
+        upload_video: bool = True,
+        options: Optional[str] = None,
+        temperature: float = 0.0,
+        max_tokens: int = 512
+    ) -> Tuple[List[str], List[str], List[Tuple[str]]]:
+        """
+        identify target_objects and cue_objects that help answer the question.
+        """
+
+        frames = None
+        if upload_video:
+            frames = load_video_frames(video_path=video_path, num_frames=self.num_frames)
+
+        if self.backend == "llava" or self.backend == "internvl":
+            system_prompt = (
+            "Analyze the following video frames, question and options:\n"
+            f"Question: {question}\n"
+            )
+
+        elif self.backend == "gpt4":
+            image_block = "\n".join(["<image>"] * len(frames)) if upload_video else ""
+            system_prompt = (
+                "Here is a video:\n"
+                + image_block
+                + "\nHere is a question about the video:\n"
+                f"Question: {question}\n"
+            )
+
+        else:
+            raise ValueError("backend must be one of 'llava', 'internvl', or 'gpt4'.")
+
+        if options:
+            system_prompt += f"Options: {options}\n"
+
+        system_prompt += (
+            """Step 1: Key Object Identification
+
+                • Extract 5-8 core objects detectable by computer vision
+
+                • Use YOLO-compatible noun phrases (e.g., “person”, “mic”)
+
+                • Format: Key Objects: obj1, obj2, obj3
+
+                Step 2: Contextual Cues
+
+                • List 3-5 scene elements that help locate key objects based on options provided
+
+                • Use YOLO-compatible detectable noun phrases (avoid abstract concepts)
+
+                • Format: Cue Objects: cue1, cue2, cue3
+                
+                Step 3: Relationship Triplets
+
+                • Relationship types:
+                    •	Spatial: Objects must appear in the same frame
+                    •	Attribute: Color/size/material descriptions (e.g., “red clothes”, “large”)
+                    •	Time: Appear in different frames within a few seconds
+                    •	Causal: There is a temporal order between the objects
+                
+                • Condition: Both objects in each relationship must be present in the extracted Key Objects and Cue Objects.
+
+                • Format: Rel: (object, relation_type, object), relation_type should be exactly one of spatial/attribute/time/causal
+
+                Output Rules
+                    1.	One line each for Key Objects/Cue Objects/Rel starting with exact prefixes
+                    2.	Separate items with comma except for triplets where items are separated by semicolon
+                    3.	Never use markdown or natural language explanations
+                    4.  If you cannot identify any key objects or cue objects from the video provided, please just identify the possible key or cue objects from the question and options provided 
+                
+                Below is an example of the procedure:
+                    Question: For “When does the person in red clothes appear with the dog?”
+                    Response:
+                        Key Objects: person, dog, red clothes
+                        Cue Objects: grassy_area, leash, fence
+                        Rel: (person; attribute; red clothes), (person; spatial; dog)
+
+                Format your response EXACTLY like this in three lines:
+                        Key Objects: object1, object2, object3
+                        Cue Objects: object1, object2, object3
+                        Rel: (object1; relation_type1; object2), (object3; relation_type2; object4)
+            """
+            )
+        
+        if upload_video:
+            response = self.VLM_model_interface.inference_with_frames_all_in_one(
+                query=system_prompt,
+                frames=frames,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+        else:
+            response = self.VLM_model_interface.inference_text_only(
+                query=system_prompt,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+
+        lines = response
+        lines = re.sub(r'\n+', '\\n', lines)
+        lines = re.sub(r'\n$', '', lines)
+        lines = re.sub(r'^\n', '', lines)
+        
+        start_pos = lines.find("Key Objects: ")
+        Rel_pos = lines.find("Rel: ")
+        end_pos = lines.find('\n', Rel_pos)
+        if end_pos == -1:
+            end_pos = len(lines)
+        lines = lines[start_pos:end_pos]
+
+        lines = lines.split("\n")
+        if len(lines) < 3:
+            raise ValueError(f"Unexpected response format from inference_query_grounding_cot() --> {response}.")
+
+        target_objects = self.parse_objects(lines[0])
+        cue_objects = self.parse_objects(lines[1])
+        relations = self.parse_relations(lines[2])
+
+        return target_objects, cue_objects, relations
+
+    def parse_objects(self, objects: str):
+        object_list = objects.split(",")
+        object_list[0] = object_list[0].replace("Key Objects:", "")
+        object_list[0] = object_list[0].replace("Cue Objects:", "")
+        for idx in range(len(object_list)):
+            object_list[idx] = object_list[idx].strip()   # strip head and tail spaces
+
+        return object_list
+    
+    def parse_relations(self, rels: str):
+        rel_list = rels.split(",")
+        rel_list[0] = rel_list[0].replace("Rel:", "")
+        for idx in range(len(rel_list)):
+            rel_list[idx] = rel_list[idx].strip()
+
+        return_list = []
+        for relation in rel_list:
+            relation_break_down = relation.split(';')
+            if len(relation_break_down) < 3:
+                # Skip a malformed triplet rather than aborting the whole parse.
+                continue
+            obj1 = relation_break_down[0].replace('(', "").strip()
+            obj2 = relation_break_down[2].replace(')', "").strip()
+            rel_type = relation_break_down[1].strip()
+            return_list.append((obj1, obj2, rel_type))
+
+        return return_list

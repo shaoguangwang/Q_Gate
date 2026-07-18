@@ -1,0 +1,15 @@
+[
+    {
+        "video_id": "86CxyhFV9MI",
+        "video_path": "./Datasets/LVBench/videos/86CxyhFV9MI.mp4",
+        "question": "In the video, which subtitles appear at the same time as the man with black hair, dressed in grey clothes with black sleeves, on stage?",
+        "options": "A) promisc has come to an end, in and run away countless times, i was just scared, i still\nB) run away countless times, i was just scared, i still and front of our crown, like a world of souls,\nC) promisc has come to an end, in and front of our crown, like a world of souls,\nD) promisc has come to an end, in and captain of the godson, three three three three three three",
+        "answer": "B",
+        "duration_group": 600,
+        "position": [
+            854,
+            948,
+            1373
+        ]
+    }
+]

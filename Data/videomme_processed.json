@@ -1,0 +1,11 @@
+[
+    {
+        "video_id": "fFjv93ACGo8",
+        "video_path": "./Datasets/Video-MME/videos/fFjv93ACGo8.mp4",
+        "question": "When demonstrating the Germany modern Christmas tree is initially decorated with apples, candles and berries, which kind of the decoration has the largest number?",
+        "options": "A) Apples.\nB) Candles.\nC) Berries.\nD) The three kinds are of the same number.",
+        "answer": "C",
+        "duration_group": "short",
+        "position": []
+    }
+]

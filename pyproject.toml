@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "q-gate"
+version = "1.0.0"
+description = "Query-Modulated Multimodal Keyframe Selection for Long Video Understanding (ACM MM 2026)"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Shaoguang Wang" },
+    { name = "Weiyu Guo" },
+    { name = "Ziyang Chen" },
+    { name = "Xuming Hu" },
+    { name = "Hui Xiong" },
+]
+keywords = ["long video understanding", "keyframe selection", "multimodal fusion", "video question answering", "MLLM"]
+dependencies = [
+    "numpy==1.26.4",
+    "torch==2.5.1",
+    "opencv-python-headless==4.10.0.84",
+    "Pillow==11.0.0",
+    "scipy==1.14.1",
+    "tqdm==4.67.1",
+    "requests==2.32.3",
+    "openai==1.59.3",
+    "sentence-transformers==5.1.1",
+]
+
+[project.optional-dependencies]
+# Tooling for the CI checks (lint + unit tests): `pip install -e ".[dev]"`.
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.8",
+]
+
+[project.urls]
+Repository = "https://github.com/shaoguangwang/Q_Gate"
+
+# Only the lightweight `qgate` backend package is installed; the Stage-0/2/3
+# entry points are run as top-level scripts (see README).
+[tool.setuptools]
+packages = ["qgate"]

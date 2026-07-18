@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use Q-Gate in your research, please cite the paper below."
+title: "Q-Gate: Query-Modulated Multimodal Keyframe Selection for Long Video Understanding"
+authors:
+  - family-names: Wang
+    given-names: Shaoguang
+  - family-names: Guo
+    given-names: Weiyu
+  - family-names: Chen
+    given-names: Ziyang
+  - family-names: Hu
+    given-names: Xuming
+  - family-names: Xiong
+    given-names: Hui
+# Accepted to ACM MM 2026. Until the official proceedings entry is available,
+# please cite the arXiv preprint below; this file will be updated at that time.
+preferred-citation:
+  type: article
+  title: "Where to Focus: Query-Modulated Multimodal Keyframe Selection for Long Video Understanding"
+  authors:
+    - family-names: Wang
+      given-names: Shaoguang
+    - family-names: Guo
+      given-names: Weiyu
+    - family-names: Chen
+      given-names: Ziyang
+    - family-names: Hu
+      given-names: Xuming
+    - family-names: Xiong
+      given-names: Hui
+  journal: "arXiv preprint arXiv:2604.17422"
+  year: 2026

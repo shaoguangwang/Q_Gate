@@ -1,0 +1,35 @@
+# Core Q-Gate pipeline (fusion + QA driver + narrative producer).
+# NumPy must stay < 2.0: NumPy 2.x breaks the OpenCV imports used here.
+numpy==1.26.4
+torch==2.5.1
+opencv-python-headless==4.10.0.84
+Pillow==11.0.0
+tqdm==4.67.1
+requests==2.32.3
+openai==1.59.3
+
+# Video-MME Stage-0 only: prepare_data.py --dataset videomme pulls the question
+# metadata from the HuggingFace hub. Not needed for LongVideoBench.
+# datasets
+
+# Narrative stream (Sentence-BERT contextual alignment).
+# transformers and scipy are transitive dependencies of sentence-transformers;
+# scipy is pinned for reproducibility, transformers left unpinned so the resolver
+# picks a compatible build (sentence-transformers 5.1.1 needs >=4.41.0,<5.0.0).
+scipy==1.14.1
+sentence-transformers==5.1.1
+
+# Relevance stream (BLIP image-text matching, global matching) is provided by LAVIS.
+# LAVIS pins older deps and is best installed in its own step; see README.
+# salesforce-lavis
+
+# Grounding stream (YOLO-World) additionally requires the external
+# YOLO-World repository plus mmdet / mmengine / supervision, video decoding
+# (decord), and plotting (matplotlib / seaborn). These are NOT installed here
+# because YOLO-World needs a matched mmcv build; see README.
+# supervision==0.25.1
+# mmengine
+# mmdet
+# decord
+# matplotlib
+# seaborn

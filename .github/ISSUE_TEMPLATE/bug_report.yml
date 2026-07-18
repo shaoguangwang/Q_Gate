@@ -1,0 +1,34 @@
+name: Bug report
+description: Report a problem running Q-Gate
+labels: [bug]
+body:
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Pipeline stage
+      options:
+        - "Stage 0 - data preparation (prepare_data.py)"
+        - "Stage 1 - score producers"
+        - "Stage 2 - fusion (fuse_scores.py)"
+        - "Stage 3 - QA (run_qa.py / run_example.sh)"
+        - "Other / not sure"
+    validations:
+      required: true
+  - type: input
+    id: config
+    attributes:
+      label: Dataset / backend / K
+      placeholder: "e.g. longvideobench, gpt4, K=8"
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and full error
+      description: The exact command you ran and the complete traceback.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "OS, Python version, and pip freeze of the core deps"

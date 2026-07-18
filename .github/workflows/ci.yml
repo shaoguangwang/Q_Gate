@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Lint (pyflakes errors only)
+        run: |
+          pip install ruff
+          # F = pyflakes: undefined names, unused imports/variables. Catches real
+          # breakage without imposing a style; runs on the whole tree.
+          ruff check --select F qgate fuse_scores.py run_qa.py prepare_data.py score_producers tests
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install core dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest
+      - name: Byte-compile all sources
+        run: |
+          python -m compileall qgate fuse_scores.py run_qa.py \
+            prepare_data.py score_producers tests
+      - name: Unit tests
+        run: pytest tests/ -q
+      - name: Run offline fusion demo
+        run: |
+          python fuse_scores.py --input_json Data/demo_raw_scores.json \
+            --output_dir ./demo_out --strategy equal --temperature 0.5
+          python -c "import json; d = json.load(open('demo_out/demo_raw_scores_fusion_equal_T0.5.json')); assert d and all('score_fusion' in r for r in d), 'score_fusion missing'; print('demo OK:', len(d), 'records')"
