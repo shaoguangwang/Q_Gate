@@ -12,10 +12,8 @@ authors:
     given-names: Xuming
   - family-names: Xiong
     given-names: Hui
-# Accepted to ACM MM 2026. Until the official proceedings entry is available,
-# please cite the arXiv preprint below; this file will be updated at that time.
 preferred-citation:
-  type: article
+  type: conference-paper
   title: "Where to Focus: Query-Modulated Multimodal Keyframe Selection for Long Video Understanding"
   authors:
     - family-names: Wang
@@ -28,5 +26,21 @@ preferred-citation:
       given-names: Xuming
     - family-names: Xiong
       given-names: Hui
-  journal: "arXiv preprint arXiv:2604.17422"
   year: 2026
+  collection-title: "Proceedings of the 34th ACM International Conference on Multimedia"
+  collection-type: "proceedings"
+  doi: "10.1145/3767308.3835040"
+  url: "https://dl.acm.org/doi/10.1145/3767308.3835040"
+  isbn: "9798400722134"
+  start: 10508
+  end: 10517
+  pages: 10
+  publisher:
+    name: "Association for Computing Machinery"
+    city: "New York"
+    region: "NY"
+    country: "US"
+  conference:
+    name: "34th ACM International Conference on Multimedia"
+    city: "Rio de Janeiro"
+    country: "BR"

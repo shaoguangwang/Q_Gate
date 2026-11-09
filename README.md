@@ -8,7 +8,8 @@
 <br>
 <sub>The Hong Kong University of Science and Technology (Guangzhou)</sub>
 
-[![Paper](https://img.shields.io/badge/Paper-arXiv-B31B1B.svg)](https://arxiv.org/abs/2604.17422)
+[![Paper](https://img.shields.io/badge/Paper-ACM%20DL-0085CA.svg)](https://dl.acm.org/doi/10.1145/3767308.3835040)
+[![arXiv](https://img.shields.io/badge/arXiv-2604.17422-B31B1B.svg)](https://arxiv.org/abs/2604.17422)
 [![Venue](https://img.shields.io/badge/ACM%20MM-2026-1a2233.svg)](https://2026.acmmm.org/)
 [![Project](https://img.shields.io/badge/Project-Page-4C6EF5.svg)](https://shaoguangwang.github.io/qgate/)
 [![CI](https://github.com/shaoguangwang/Q_Gate/actions/workflows/ci.yml/badge.svg)](https://github.com/shaoguangwang/Q_Gate/actions/workflows/ci.yml)
@@ -279,15 +280,25 @@ See the paper for the full comparison against prior methods, ablations, and effi
 ## 📝 Citation
 
 ```bibtex
-@article{wang2026focus,
-  title={Where to Focus: Query-Modulated Multimodal Keyframe Selection for Long Video Understanding},
-  author={Wang, Shaoguang and Guo, Weiyu and Chen, Ziyang and Hu, Xuming and Xiong, Hui},
-  journal={arXiv preprint arXiv:2604.17422},
-  year={2026}
+@inproceedings{10.1145/3767308.3835040,
+  author = {Wang, Shaoguang and Guo, Weiyu and Chen, Ziyang and Hu, Xuming and Xiong, Hui},
+  title = {Where to Focus: Query-Modulated Multimodal Keyframe Selection for Long Video Understanding},
+  year = {2026},
+  isbn = {9798400722134},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  url = {https://doi.org/10.1145/3767308.3835040},
+  doi = {10.1145/3767308.3835040},
+  booktitle = {Proceedings of the 34th ACM International Conference on Multimedia},
+  pages = {10508--10517},
+  numpages = {10},
+  keywords = {long video understanding, keyframe selection, multimodal fusion, visual grounding, video question answering},
+  location = {Rio de Janeiro, Brazil},
+  series = {MM '26}
 }
 ```
 
-> Accepted to ACM MM 2026; this entry will be updated to the official proceedings citation once available.
+> Official proceedings version: [ACM Digital Library](https://dl.acm.org/doi/10.1145/3767308.3835040), MM '26, pp. 10508–10517.
 
 ## 📚 Acknowledgements
 
